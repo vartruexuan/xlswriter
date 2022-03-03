@@ -1,0 +1,17 @@
+{
+    "name": "vartruexuan\/xlswriter",
+    "description": "Package description here.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "GuoZhaoXuan",
+            "email": "1175398345@qq.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Vartruexuan\\Xlswriter\\": "src"
+        }
+    }
+}
