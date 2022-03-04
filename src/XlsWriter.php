@@ -1,4 +1,12 @@
 <?php
+/*
+ * This file is part of the vartruexuan/xlswriter.
+ *
+ * (c) vartruexuan <guozhaoxuanx@163.com>
+ *
+ * This source file is subject to the MIT license that is bundled
+ * with this source code in the file LICENSE.
+ */
 
 namespace Vartruexuan\Xlswriter;
 
@@ -21,7 +29,9 @@ class XlsWriter
 
     /**
      * @param array $sheetsConfig
-     * @return bool|string
+     * @param $fileName
+     * @param $isConstMemory
+     * @return string
      */
     public function export(array $sheetsConfig, $fileName = 'demo.xlsx', $isConstMemory = false)
     {
@@ -93,18 +103,17 @@ class XlsWriter
             if ($endRow > $maxRow) {
                 $maxRow = $endRow;
             }
-            $format = new Format($this->excel->getHandle());
 
-            $format = $format->align(Format::FORMAT_ALIGN_CENTER, Format::FORMAT_ALIGN_VERTICAL_CENTER);
-            if (isset($head['style']) && is_callable($head['style'])) {
-                $head['style']($format);
-            }
-            $style = $format->toResource();
+            // 默认样式
+            $format = new StyleFormat([
+                "align"=>[Format::FORMAT_ALIGN_CENTER, Format::FORMAT_ALIGN_VERTICAL_CENTER],
+                "bold"=>true,
+            ],$this->excel->getHandle());
 
-            # 合并行 A1:B3
-            $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $head['title'], $style);
+            // 合并单元格 [A1:B3]
+            $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $head['title'],  $format->toResource());
 
-            # 子级
+            // 子集操作
             if (isset($head['children']) && $head['children']) {
                 $endColIndex = $startColIndex - 1;
                 $this->setHeader($head['children'], $maxRow, $dataHeaders, $rowIndex + $head['rowspan'], $endColIndex);
@@ -153,8 +162,6 @@ class XlsWriter
     {
         return Excel::stringFromColumnIndex($index);
     }
-
-
 
     public function setSheetZoom($zoom)
     {
