@@ -11,7 +11,7 @@
 
 namespace Vartruexuan\Xlswriter;
 
-class Config
+class DefaultConfig
 {
 
 
@@ -51,12 +51,11 @@ class Config
     public static function getHeaderConfig($config=[])
     {
         return array_merge([
-            "title" => "名称",
+            "title" => "",
             "type" => "string",
-            "key" => "name",
+            "key" => "",
             "style" => "",
-            "dataFormat" => function () {
-            },
+            "dataFormat" =>null,
             "rowspan" => 1,
             "colspan" => 1,
             "children" => [],

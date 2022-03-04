@@ -31,9 +31,9 @@ class StyleFormat
 
     protected function initFormat()
     {
-        foreach ($this->config as $k => $v) {
-            if (method_exists($this, $k)) {
-                call_user_func_array([$this, $k], ['param' => $v]);
+        foreach ($this->config as $method => $param) {
+            if (method_exists($this, $method)) {
+                call_user_func_array([$this, $method], ['param' => $param]);
             }
         }
     }
@@ -71,9 +71,9 @@ class StyleFormat
         return $this;
     }
 
-    protected function border($param)
+    protected function border($style)
     {
-        $this->format->border($param);
+        $this->format->border($style);
         return $this;
     }
 
@@ -83,15 +83,15 @@ class StyleFormat
         return $this;
     }
 
-    protected function font($param)
+    protected function font($fontName)
     {
-        $this->format->font($param);
+        $this->format->font($fontName);
         return $this;
     }
 
-    protected function number($param)
+    protected function number($format)
     {
-        $this->format->number($param);
+        $this->format->number($format);
         return $this;
     }
 
@@ -101,9 +101,9 @@ class StyleFormat
         return $this;
     }
 
-    protected function underline($param)
+    protected function underline($style)
     {
-        $this->format->underline($param);
+        $this->format->underline($style);
         return $this;
     }
 

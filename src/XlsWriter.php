@@ -29,35 +29,83 @@ class XlsWriter
 
     /**
      * @param array $sheetsConfig
-     * @param $fileName
-     * @param $isConstMemory
+     * @param string $fileName
+     * @param bool $isConstMemory
      * @return string
      */
-    public function export(array $sheetsConfig, $fileName = 'demo.xlsx', $isConstMemory = false)
+    public function export($sheetsConfig, $fileName = 'demo.xlsx', $isConstMemory = false)
     {
-        // 固定内存模式
-        if ($isConstMemory) {
-            $this->excel = $this->excel->constMemory($fileName);
-        } else {
-            $this->excel = $this->excel->fileName($fileName);
-        }
-        foreach ($sheetsConfig as $sheetConfig) {
-            $this->exportSheet($sheetConfig);
+        foreach ($sheetsConfig as $k => $sheetConfig) {
+            // 固定内存模式
+            if (!$k) {
+                if ($isConstMemory) {
+                    $this->excel = $this->excel->constMemory($fileName, $sheetConfig['sheetName'],false); // wps
+                } else {
+                    $this->excel = $this->excel->fileName($fileName, $sheetConfig['sheetName']);
+                }
+            }
+            $this->exportSheet($sheetConfig, $k);
         }
         $filePath = $this->excel->output();
         $this->closeExcel();
         return $filePath;
     }
 
-    public function exportSheet($sheetConfig)
+    protected function exportSheet($sheetConfig, $isAdd = false)
     {
+        if ($isAdd) {
+            $this->excel->addSheet($sheetConfig['sheetName']);
+        }
         // 设置header
-        $this->setHeader($this->calculationColspan($sheetConfig['header']));
+        $dataHeaders = [];
+        $endColIndex = -1;
+        $rowIndex = 1;
+        $this->setHeader($this->calculationColspan($sheetConfig['header']), $maxRow, $dataHeaders, $rowIndex, $endColIndex);
         // 导出数据
-
-        // 处理回调
+        $this->exportData($dataHeaders, $sheetConfig, $maxRow);
 
     }
+
+    protected function exportData($dataHeaders, $sheetConfig, $maxRow)
+    {
+        $i = 1;
+        $keysIndex = array_flip(array_column($dataHeaders, 'key'));
+        $this->excel->setCurrentLine($maxRow);
+        do {
+            $data = $sheetConfig['data'];
+            $rs = true;
+            if (is_callable($sheetConfig['data'])) {
+                $rs = $sheetConfig['data']($i, $data);
+            }
+            if ($i == 1) {
+                $pageSize = count($data);
+            }
+            // 格式化数据
+            foreach ($data as $k => $v) {
+                foreach ($dataHeaders as $colIndex => $head) {
+                    // 格式化
+                    if (is_callable($head['dataFormat'])) {
+                        $newVal[$head['key']] = call_user_func_array($head['dataFormat'], [
+                            'row' => $v,
+                            'rowIndex' => $pageSize * ($i - 1) + $k,
+                            'colIndex' => $keysIndex[$head['key']]
+                        ]);
+                    } else {
+                        $newVal[$head['key']] = $v[$head['key']] ?? '';
+                    }
+                    // 样式
+
+
+                }
+                // 写入数据
+                $this->excel->data([array_values($newVal)]);
+            }
+            $i++;
+        } while (!$rs);
+
+
+    }
+
 
     public function getConfig()
     {
@@ -80,7 +128,7 @@ class XlsWriter
     private function setHeader(array $headers, &$maxRow = 1, &$dataHeaders = [], $rowIndex = 1, &$endColIndex = -1)
     {
         foreach ($headers as $head) {
-            $head = Config::getHeaderConfig($head);
+            $head = DefaultConfig::getHeaderConfig($head);
             if ($head['key']) {
                 $dataHeaders[] = [
                     'key' => $head['key'],
@@ -106,13 +154,14 @@ class XlsWriter
 
             // 默认样式
             $format = new StyleFormat([
-                "align"=>[Format::FORMAT_ALIGN_CENTER, Format::FORMAT_ALIGN_VERTICAL_CENTER],
-                "bold"=>true,
-            ],$this->excel->getHandle());
+                "align" => [Format::FORMAT_ALIGN_CENTER, Format::FORMAT_ALIGN_VERTICAL_CENTER],
+                "bold" => true,
+            ], $this->excel->getHandle());
 
             // 合并单元格 [A1:B3]
-            $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $head['title'],  $format->toResource());
 
+            var_dump("{$startCol}{$startRow}:{$endCol}{$endRow}");
+            $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $head['title'], $format->toResource());
             // 子集操作
             if (isset($head['children']) && $head['children']) {
                 $endColIndex = $startColIndex - 1;
