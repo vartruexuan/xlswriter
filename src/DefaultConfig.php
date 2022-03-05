@@ -14,17 +14,6 @@ namespace Vartruexuan\Xlswriter;
 class DefaultConfig
 {
 
-
-
-    public static function getCommonConfig($config=[])
-    {
-        return array_merge([
-            "path"=>"./", // 导出地址
-        ],$config);
-
-    }
-
-
     public static function getSheetConfig($config){
 
         return array_merge([

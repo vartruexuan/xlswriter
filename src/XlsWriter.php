@@ -13,13 +13,16 @@ namespace Vartruexuan\Xlswriter;
 use \Vtiful\Kernel\Excel;
 use \Vtiful\Kernel\Format;
 
-class XlsWriter
+class XlsWriter extends BaseExcel
 {
     /**
      * @var \Vtiful\Kernel\Excel
      */
-    private $excel = null;
-    private $config = [];
+    protected $excel = null;
+
+    protected $config = [
+        "path" => "./", // 导出地址
+    ];
 
     public function __construct($config = [])
     {
@@ -36,8 +39,9 @@ class XlsWriter
     public function export($sheetsConfig, $fileName = 'demo.xlsx', $isConstMemory = false)
     {
         foreach ($sheetsConfig as $k => $sheetConfig) {
-            // 固定内存模式
+
             if (!$k) {
+                // 固定内存模式
                 if ($isConstMemory) {
                     $this->excel = $this->excel->constMemory($fileName, $sheetConfig['sheetName'], false); // wps
                 } else {
@@ -51,6 +55,20 @@ class XlsWriter
         return $filePath;
     }
 
+    public function import($config, $fileName = 'demo.xlsx')
+    {
+        $this->excel = $this->excel->openFile($fileName);
+        $sheetList = $this->excel->sheetList();
+
+        $list = [];
+        foreach ($sheetList as $sheet) {
+            $data = $this->excel->openSheet($sheet)->getSheetData();
+            $list[$sheet] = $data;
+        }
+        return $list;
+        // return [];
+    }
+
     protected function exportSheet($sheetConfig, $isAdd = false)
     {
         if ($isAdd) {
@@ -58,7 +76,6 @@ class XlsWriter
         }
         // 设置sheet
         $this->setSheet($sheetConfig);
-
         // 设置header
         $dataHeaders = [];
         $endColIndex = -1;
@@ -66,18 +83,18 @@ class XlsWriter
         $this->setHeader($this->calculationColspan($sheetConfig['header']), $maxRow, $dataHeaders, $rowIndex, $endColIndex);
         // 导出数据
         $this->exportData($dataHeaders, $sheetConfig, $maxRow);
-
     }
 
     protected function setSheet($sheetConfig)
     {
-        $sheet=new Sheet($sheetConfig,$this->excel);
+        $sheet = new Sheet($sheetConfig, $this->excel);
         foreach ($sheetConfig as $method => $param) {
-            if(method_exists($sheet,$method)){
-                call_user_func_array([$sheet,$method],['param'=>$param]);
+            if (method_exists($sheet, $method)) {
+                call_user_func_array([$sheet, $method], ['param' => $param]);
             }
         }
     }
+
     protected function setHeader(array $headers, &$maxRow = 1, &$dataHeaders = [], $rowIndex = 1, &$endColIndex = -1)
     {
         foreach ($headers as $head) {
@@ -129,9 +146,9 @@ class XlsWriter
         $this->excel->setCurrentLine($maxRow);
         do {
             $data = $sheetConfig['data'];
-            $rs = true;
+            $isWhile = false;
             if (is_callable($sheetConfig['data'])) {
-                $rs = $sheetConfig['data']($i, $data);
+                $data = $sheetConfig['data']($i, $isWhile);
             }
             if ($i == 1) {
                 $pageSize = count($data);
@@ -151,28 +168,15 @@ class XlsWriter
                     }
                     // 样式
 
-
-
                 }
                 // 写入数据
                 $this->excel->data([array_values($newVal)]);
             }
             $i++;
-        } while (!$rs);
+        } while ($isWhile);
 
 
     }
-
-    public function getConfig()
-    {
-        return $this->config;
-    }
-
-    private function setConfig($config)
-    {
-        $this->config = array_merge($this->config, $config);
-    }
-
 
     /**
      * 计算colspan(多级)
@@ -197,15 +201,15 @@ class XlsWriter
         return $header;
     }
 
-    private function initExcel()
+    protected function initExcel()
     {
         if (!$this->excel instanceof \Vtiful\Kernel\Excel) {
-            $this->excel = new Excel($this->config);
+            $this->excel = new Excel($this->getConfig());
         }
         return $this->excel;
     }
 
-    private function closeExcel()
+    protected function closeExcel()
     {
         return $this->excel->close();
     }
@@ -217,7 +221,6 @@ class XlsWriter
 
     public static function columnIndexFromString($index)
     {
-
         return Excel::columnIndexFromString($index);
     }
 

@@ -13,25 +13,23 @@ namespace Vartruexuan\Xlswriter;
 
 use Vtiful\Kernel\Format;
 
-class StyleFormat
+class StyleFormat extends BaseExcel
 {
-    private $config = [];
-
     /**
      * @var \Vtiful\Kernel\Format
      */
-    private $format = null;
+    protected $format = null;
 
     public function __construct($config, $fileHandle)
     {
-        $this->config = $config;
+        $this->setConfig($config);
         $this->format = new Format($fileHandle);
         $this->initFormat();
     }
 
     protected function initFormat()
     {
-        foreach ($this->config as $method => $param) {
+        foreach ($this->getConfig() as $method => $param) {
             if (method_exists($this, $method)) {
                 call_user_func_array([$this, $method], ['param' => $param]);
             }
@@ -79,7 +77,7 @@ class StyleFormat
 
     protected function background($param)
     {
-        $this->format->background($param['color'],$param['pattern']);
+        $this->format->background($param['color'], $param['pattern']);
         return $this;
     }
 
@@ -104,6 +102,12 @@ class StyleFormat
     protected function underline($style)
     {
         $this->format->underline($style);
+        return $this;
+    }
+
+    protected function unlocked()
+    {
+        $this->format->unlocked();
         return $this;
     }
 

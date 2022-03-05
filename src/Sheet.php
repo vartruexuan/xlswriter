@@ -1,21 +1,26 @@
 <?php
+/*
+ * This file is part of the vartruexuan/xlswriter.
+ *
+ * (c) vartruexuan <guozhaoxuanx@163.com>
+ *
+ * This source file is subject to the MIT license that is bundled
+ * with this source code in the file LICENSE.
+ */
 
 namespace Vartruexuan\Xlswriter;
 
-class Sheet
+class Sheet extends BaseExcel
 {
     /**
      * @var \Vtiful\Kernel\Excel
      */
-    private $excel = null;
-
-    private $config = null;
+    protected $excel = null;
 
     public function __construct($sheetConfig, $excel)
     {
-        $this->config = $sheetConfig;
+        $this->setConfig($sheetConfig);
         $this->excel = $excel;
-        $this->excel->checkoutSheet($sheetConfig['sheetName']);
     }
 
     /**
@@ -40,16 +45,23 @@ class Sheet
         }
         return $this;
     }
-    public function gridline($gridline = \Vtiful\Kernel\Excel::GRIDLINES_HIDE_ALL)
+
+    public function gridline($gridline = Constant::GRIDLINES_HIDE_ALL)
     {
-         $this->excel->gridline($gridline);
-         return $this;
+        $this->excel->gridline($gridline);
+        return $this;
     }
+
     public function defaultFormat($style)
     {
-
-        $format=new StyleFormat($style,$this->excel->getHandle());
+        $format = new StyleFormat($style, $this->excel->getHandle());
         $this->excel->defaultFormat($format->toResource());
+        return $this;
+    }
+
+    public function protection($password)
+    {
+        $this->excel->protection($password);
         return $this;
     }
 }
