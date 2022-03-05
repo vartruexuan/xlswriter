@@ -39,7 +39,7 @@ class XlsWriter
             // 固定内存模式
             if (!$k) {
                 if ($isConstMemory) {
-                    $this->excel = $this->excel->constMemory($fileName, $sheetConfig['sheetName'],false); // wps
+                    $this->excel = $this->excel->constMemory($fileName, $sheetConfig['sheetName'], false); // wps
                 } else {
                     $this->excel = $this->excel->fileName($fileName, $sheetConfig['sheetName']);
                 }
@@ -56,6 +56,9 @@ class XlsWriter
         if ($isAdd) {
             $this->excel->addSheet($sheetConfig['sheetName']);
         }
+        // 设置sheet
+        $this->setSheet($sheetConfig);
+
         // 设置header
         $dataHeaders = [];
         $endColIndex = -1;
@@ -66,66 +69,16 @@ class XlsWriter
 
     }
 
-    protected function exportData($dataHeaders, $sheetConfig, $maxRow)
+    protected function setSheet($sheetConfig)
     {
-        $i = 1;
-        $keysIndex = array_flip(array_column($dataHeaders, 'key'));
-        $this->excel->setCurrentLine($maxRow);
-        do {
-            $data = $sheetConfig['data'];
-            $rs = true;
-            if (is_callable($sheetConfig['data'])) {
-                $rs = $sheetConfig['data']($i, $data);
+        $sheet=new Sheet($sheetConfig,$this->excel);
+        foreach ($sheetConfig as $method => $param) {
+            if(method_exists($sheet,$method)){
+                call_user_func_array([$sheet,$method],['param'=>$param]);
             }
-            if ($i == 1) {
-                $pageSize = count($data);
-            }
-            // 格式化数据
-            foreach ($data as $k => $v) {
-                foreach ($dataHeaders as $colIndex => $head) {
-                    // 格式化
-                    if (is_callable($head['dataFormat'])) {
-                        $newVal[$head['key']] = call_user_func_array($head['dataFormat'], [
-                            'row' => $v,
-                            'rowIndex' => $pageSize * ($i - 1) + $k,
-                            'colIndex' => $keysIndex[$head['key']]
-                        ]);
-                    } else {
-                        $newVal[$head['key']] = $v[$head['key']] ?? '';
-                    }
-                    // 样式
-
-
-                }
-                // 写入数据
-                $this->excel->data([array_values($newVal)]);
-            }
-            $i++;
-        } while (!$rs);
-
-
+        }
     }
-
-
-    public function getConfig()
-    {
-        return $this->config;
-    }
-
-    private function setConfig($config)
-    {
-        $this->config = array_merge($this->config, $config);
-    }
-
-    /**
-     * @param array $headers
-     * @param $maxRow
-     * @param $dataHeaders
-     * @param $rowIndex
-     * @param $endColIndex
-     * @return bool
-     */
-    private function setHeader(array $headers, &$maxRow = 1, &$dataHeaders = [], $rowIndex = 1, &$endColIndex = -1)
+    protected function setHeader(array $headers, &$maxRow = 1, &$dataHeaders = [], $rowIndex = 1, &$endColIndex = -1)
     {
         foreach ($headers as $head) {
             $head = DefaultConfig::getHeaderConfig($head);
@@ -159,8 +112,6 @@ class XlsWriter
             ], $this->excel->getHandle());
 
             // 合并单元格 [A1:B3]
-
-            var_dump("{$startCol}{$startRow}:{$endCol}{$endRow}");
             $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $head['title'], $format->toResource());
             // 子集操作
             if (isset($head['children']) && $head['children']) {
@@ -170,6 +121,58 @@ class XlsWriter
         }
         return true;
     }
+
+    protected function exportData($dataHeaders, $sheetConfig, $maxRow)
+    {
+        $i = 1;
+        $keysIndex = array_flip(array_column($dataHeaders, 'key'));
+        $this->excel->setCurrentLine($maxRow);
+        do {
+            $data = $sheetConfig['data'];
+            $rs = true;
+            if (is_callable($sheetConfig['data'])) {
+                $rs = $sheetConfig['data']($i, $data);
+            }
+            if ($i == 1) {
+                $pageSize = count($data);
+            }
+            // 格式化数据
+            foreach ($data as $k => $v) {
+                foreach ($dataHeaders as $colIndex => $head) {
+                    // 格式化
+                    if (is_callable($head['dataFormat'])) {
+                        $newVal[$head['key']] = call_user_func_array($head['dataFormat'], [
+                            'row' => $v,
+                            'rowIndex' => $pageSize * ($i - 1) + $k,
+                            'colIndex' => $keysIndex[$head['key']]
+                        ]);
+                    } else {
+                        $newVal[$head['key']] = $v[$head['key']] ?? '';
+                    }
+                    // 样式
+
+
+
+                }
+                // 写入数据
+                $this->excel->data([array_values($newVal)]);
+            }
+            $i++;
+        } while (!$rs);
+
+
+    }
+
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    private function setConfig($config)
+    {
+        $this->config = array_merge($this->config, $config);
+    }
+
 
     /**
      * 计算colspan(多级)
@@ -207,23 +210,15 @@ class XlsWriter
         return $this->excel->close();
     }
 
-    public function stringFromColumnIndex($index)
+    public static function stringFromColumnIndex($index)
     {
         return Excel::stringFromColumnIndex($index);
     }
 
-    public function setSheetZoom($zoom)
+    public static function columnIndexFromString($index)
     {
-        return $this->excel->zoom($zoom);
+
+        return Excel::columnIndexFromString($index);
     }
 
-    public function setSheetHide()
-    {
-        return $this->setCurrentSheetHide();
-    }
-
-    public function setSheetGridline($gridline = \Vtiful\Kernel\Excel::GRIDLINES_HIDE_ALL)
-    {
-        return $this->excel->gridline($gridline);
-    }
 }
