@@ -46,4 +46,16 @@ class Constant
     const GRIDLINES_SHOW_PRINT  = Excel::GRIDLINES_SHOW_PRINT; // 显示打印网格线
     const GRIDLINES_SHOW_ALL    = Excel::GRIDLINES_SHOW_ALL; // 显示 屏幕网格线 和 打印网格线
 
+
+    const SKIP_NONE = 0x00;         // 不忽略任何单元格、行
+    const SKIP_EMPTY_ROW = 0x01;    // 忽略空行
+    const SKIP_EMPTY_CELLS = 0x02;  // 忽略空单元格（肉眼观察单元格内无数据，并不代表单元格未定义、未使用）
+    const SKIP_EMPTY_VALUE = 0X100; // 忽略单元格空数据
+
+
+    const TYPE_STRING = 0x01;    // 字符串
+    const TYPE_INT = 0x02;       // 整型
+    const TYPE_DOUBLE = 0x04;    // 浮点型
+    const TYPE_TIMESTAMP = 0x08; // 时间戳，可以将 xlsx 文件中的格式化时间字符转为时间戳
+
 }

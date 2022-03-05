@@ -8,7 +8,9 @@
             "email": "guozhaoxuanx@163.com"
         }
     ],
-    "require": {},
+    "require": {
+        "viest/php-ext-xlswriter-ide-helper": "dev-master"
+    },
     "autoload": {
         "psr-4": {
             "Vartruexuan\\Xlswriter\\": "src"

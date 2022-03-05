@@ -20,11 +20,7 @@ class DefaultConfig
 
             "sheetName" =>"",
             "sheetType" =>"",
-            "data" =>[
-                [
-                    "name"=>"测试",
-                ]
-            ],
+            "data" =>[],
             "zoom" =>"",
             "gridline" =>"",
             "isHide" =>false,

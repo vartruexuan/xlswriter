@@ -66,7 +66,6 @@ class XlsWriter extends BaseExcel
             $list[$sheet] = $data;
         }
         return $list;
-        // return [];
     }
 
     protected function exportSheet($sheetConfig, $isAdd = false)
