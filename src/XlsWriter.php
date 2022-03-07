@@ -111,9 +111,8 @@ class XlsWriter extends BaseExcel
             $startCol = self::stringFromColumnIndex($startColIndex);
             $endCol = self::stringFromColumnIndex($endColIndex);
 
-            if ($head['width']) {
-                $this->excel->setColumn("{$startCol}:{$endCol}", $head['width']);
-            }
+            $head['width'] = $head['width'] > 0 ? $head['width'] : strlen($head['title']) + 5;
+            $this->excel->setColumn("{$startCol}:{$endCol}", $head['width']);
 
             $startRow = $rowIndex;
             $endRow = $startRow + $head['rowspan'] - 1;
