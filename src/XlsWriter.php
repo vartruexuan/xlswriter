@@ -146,7 +146,7 @@ class XlsWriter extends BaseExcel
             $data = $sheetConfig['data'];
             $isWhile = false;
             if (is_callable($sheetConfig['data'])) {
-                $data = $sheetConfig['data']($i, $isWhile);
+                $data = $sheetConfig['data']($this,$i, $isWhile);
             }
             if ($i == 1) {
                 $pageSize = count($data);
