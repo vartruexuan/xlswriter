@@ -18,7 +18,7 @@ class XlsWriter extends BaseExcel
     /**
      * @var \Vtiful\Kernel\Excel
      */
-    protected $excel = null;
+    public $excel = null;
 
     protected $config = [
         "path" => "./", // 导出地址
@@ -31,9 +31,10 @@ class XlsWriter extends BaseExcel
     }
 
     /**
-     * @param array $sheetsConfig
+     * @param array  $sheetsConfig
      * @param string $fileName
-     * @param bool $isConstMemory
+     * @param bool   $isConstMemory
+     *
      * @return string
      */
     public function export($sheetsConfig, $fileName = 'demo.xlsx', $isConstMemory = false)
@@ -146,34 +147,48 @@ class XlsWriter extends BaseExcel
             $data = $sheetConfig['data'];
             $isWhile = false;
             if (is_callable($sheetConfig['data'])) {
-                $data = $sheetConfig['data']($this,$i, $isWhile);
+                $data = $sheetConfig['data']($this, $i,$dataHeaders ,$isWhile);
             }
             if ($i == 1) {
                 $pageSize = count($data);
             }
+            $startRowIndex=$pageSize * ($i - 1) ;
             // 格式化数据
-            foreach ($data as $k => $v) {
-                foreach ($dataHeaders as $colIndex => $head) {
-                    // 格式化
-                    if (is_callable($head['dataFormat'])) {
-                        $newVal[$head['key']] = call_user_func_array($head['dataFormat'], [
-                            'row' => $v,
-                            'rowIndex' => $pageSize * ($i - 1) + $k,
-                            'colIndex' => $keysIndex[$head['key']]
-                        ]);
-                    } else {
-                        $newVal[$head['key']] = $v[$head['key']] ?? '';
-                    }
-                    // 样式
-
-                }
-                // 写入数据
-                $this->excel->data([array_values($newVal)]);
-            }
+            $this->writerData($data,$dataHeaders,$startRowIndex);
             $i++;
         } while ($isWhile);
 
+    }
 
+    /**
+     * 写入数据
+     *
+     * @param $data
+     * @param $dataHeaders
+     *
+     * @return void
+     */
+    public function writerData($data,$dataHeaders,$startRowIndex=0)
+    {
+        // 格式化数据
+        foreach ($data as $k => $v) {
+            foreach ($dataHeaders as $colIndex => $head) {
+                // 格式化
+                if (is_callable($head['dataFormat'])) {
+                    $newVal[$head['key']] = call_user_func_array($head['dataFormat'], [
+                        'row' => $v,
+                        'rowIndex' =>$startRowIndex + $k,
+                        'colIndex' => $keysIndex[$head['key']]
+                    ]);
+                } else {
+                    $newVal[$head['key']] = $v[$head['key']] ?? '';
+                }
+                // 样式
+            }
+            $data[$k]=array_values($newVal??[]);
+        }
+        // 写入数据
+        $this->excel->data(array_values($data));
     }
 
     /**
