@@ -45,7 +45,6 @@ class XlsWriter extends BaseExcel
             if (!$k) {
                 // 固定内存模式
                 if ($isConstMemory) {
-                    echo "ssss";
                     $this->excel = $this->excel->constMemory($fileName, $sheetConfig['sheetName'], false); // wps
                 } else {
                     $this->excel = $this->excel->fileName($fileName, $sheetConfig['sheetName']);
