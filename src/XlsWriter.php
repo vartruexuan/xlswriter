@@ -39,17 +39,19 @@ class XlsWriter extends BaseExcel
      */
     public function export($sheetsConfig, $fileName = 'demo.xlsx', $isConstMemory = false)
     {
+        set_time_limit(0);
         foreach ($sheetsConfig as $k => $sheetConfig) {
 
             if (!$k) {
                 // 固定内存模式
                 if ($isConstMemory) {
+                    echo "ssss";
                     $this->excel = $this->excel->constMemory($fileName, $sheetConfig['sheetName'], false); // wps
                 } else {
                     $this->excel = $this->excel->fileName($fileName, $sheetConfig['sheetName']);
                 }
             }
-            $this->exportSheet($sheetConfig, $k);
+            $this->exportSheet($sheetConfig, $k,$isConstMemory);
         }
         $filePath = $this->excel->output();
         $this->closeExcel();
@@ -69,7 +71,7 @@ class XlsWriter extends BaseExcel
         return $list;
     }
 
-    protected function exportSheet($sheetConfig, $isAdd = false)
+    protected function exportSheet($sheetConfig, $isAdd = false,$isConstMemory=false)
     {
         if ($isAdd) {
             $this->excel->addSheet($sheetConfig['sheetName']);
@@ -80,9 +82,13 @@ class XlsWriter extends BaseExcel
         $dataHeaders = [];
         $endColIndex = -1;
         $rowIndex = 1;
+        if($isConstMemory){
+            // $this->excel->header(array_column($sheetConfig['header'],'title'));
+        }
         $this->setHeader($this->calculationColspan($sheetConfig['header']), $maxRow, $dataHeaders, $rowIndex, $endColIndex);
+
         // 导出数据
-        $this->exportData($dataHeaders, $sheetConfig, $maxRow);
+        $this->exportData($dataHeaders, $sheetConfig,$maxRow);
     }
 
     protected function setSheet($sheetConfig)
@@ -176,13 +182,13 @@ class XlsWriter extends BaseExcel
             foreach ($dataHeaders as $colIndex => $head) {
                 // 格式化
                 if (is_callable($head['dataFormat'])) {
-                    $newVal[$head['key']] = call_user_func_array($head['dataFormat'], [
+                    $newVal[$colIndex] = call_user_func_array($head['dataFormat'], [
                         'row' => $v,
                         'rowIndex' =>$startRowIndex + $k,
                         'colIndex' => $keysIndex[$head['key']]
                     ]);
                 } else {
-                    $newVal[$head['key']] = $v[$head['key']] ?? '';
+                    $newVal[$colIndex] = $v[$head['key']] ?? '';
                 }
                 // 样式
             }
