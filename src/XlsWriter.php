@@ -141,7 +141,7 @@ class XlsWriter extends BaseExcel
     protected function exportData($dataHeaders, $sheetConfig, $maxRow)
     {
         $i = 1;
-        $keysIndex = array_flip(array_column($dataHeaders, 'key'));
+
         $this->excel->setCurrentLine($maxRow);
         do {
             $data = $sheetConfig['data'];
@@ -170,6 +170,7 @@ class XlsWriter extends BaseExcel
      */
     public function writerData($data,$dataHeaders,$startRowIndex=0)
     {
+        $keysIndex = array_flip(array_column($dataHeaders, 'key'));
         // 格式化数据
         foreach ($data as $k => $v) {
             foreach ($dataHeaders as $colIndex => $head) {
