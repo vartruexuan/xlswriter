@@ -50,7 +50,7 @@ class XlsWriter extends BaseExcel
                     $this->excel = $this->excel->fileName($fileName, $sheetConfig['sheetName']);
                 }
             }
-            $this->exportSheet($sheetConfig, $k,$isConstMemory);
+            $this->exportSheet($sheetConfig, $k, $isConstMemory);
         }
         $filePath = $this->excel->output();
         $this->closeExcel();
@@ -70,7 +70,7 @@ class XlsWriter extends BaseExcel
         return $list;
     }
 
-    protected function exportSheet($sheetConfig, $isAdd = false,$isConstMemory=false)
+    protected function exportSheet($sheetConfig, $isAdd = false, $isConstMemory = false)
     {
         if ($isAdd) {
             $this->excel->addSheet($sheetConfig['sheetName']);
@@ -81,13 +81,13 @@ class XlsWriter extends BaseExcel
         $dataHeaders = [];
         $endColIndex = -1;
         $rowIndex = 1;
-        if($isConstMemory){
+        if ($isConstMemory) {
             // $this->excel->header(array_column($sheetConfig['header'],'title'));
         }
         $this->setHeader($this->calculationColspan($sheetConfig['header']), $maxRow, $dataHeaders, $rowIndex, $endColIndex);
 
         // 导出数据
-        $this->exportData($dataHeaders, $sheetConfig,$maxRow);
+        $this->exportData($dataHeaders, $sheetConfig, $maxRow);
     }
 
     protected function setSheet($sheetConfig)
@@ -152,14 +152,14 @@ class XlsWriter extends BaseExcel
             $data = $sheetConfig['data'];
             $isWhile = false;
             if (is_callable($sheetConfig['data'])) {
-                $data = $sheetConfig['data']($this, $i,$dataHeaders ,$isWhile);
+                $data = $sheetConfig['data']($this, $i, $dataHeaders, $isWhile);
             }
             if ($i == 1) {
                 $pageSize = count($data);
             }
-            $startRowIndex=$pageSize * ($i - 1) ;
+            $startRowIndex = $pageSize * ($i - 1);
             // 格式化数据
-            $this->writerData($data,$dataHeaders,$startRowIndex);
+            $this->writerData($data, $dataHeaders, $sheetConfig, $startRowIndex);
             $i++;
         } while ($isWhile);
 
@@ -173,28 +173,52 @@ class XlsWriter extends BaseExcel
      *
      * @return void
      */
-    public function writerData($data,$dataHeaders,$startRowIndex=0)
+    public function writerData($data, $dataHeaders, $sheetConfig, $startRowIndex = 0)
     {
         $keysIndex = array_flip(array_column($dataHeaders, 'key'));
         // 格式化数据
+        $newData = [];
         foreach ($data as $k => $v) {
+            // 行处理
+            $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null, $startRowIndex + $k, $keysIndex));
             foreach ($dataHeaders as $colIndex => $head) {
                 // 格式化
                 if (is_callable($head['dataFormat'])) {
                     $newVal[$colIndex] = call_user_func_array($head['dataFormat'], [
                         'row' => $v,
-                        'rowIndex' =>$startRowIndex + $k,
+                        'rowIndex' => $startRowIndex + $k,
                         'colIndex' => $keysIndex[$head['key']]
                     ]);
                 } else {
                     $newVal[$colIndex] = $v[$head['key']] ?? '';
                 }
-                // 样式
+                // 列样式
             }
-            $data[$k]=array_values($newVal??[]);
+            $newData[$k] = array_values($newVal ?? []);
+
         }
         // 写入数据
-        $this->excel->data(array_values($data));
+        $this->excel->data(array_values($newData));
+        $this->rowFormat($mergeList ?? []);
+
+    }
+
+    protected function rowFormat($mergeList)
+    {
+        // 计算最终合并
+        // 合并行单元格
+        foreach ($mergeList as $merge) {
+            // 默认样式
+            $format = new StyleFormat([
+                "align" => [Format::FORMAT_ALIGN_CENTER, Format::FORMAT_ALIGN_VERTICAL_CENTER],
+            ], $this->excel->getHandle());
+            $startCol = self::stringFromColumnIndex($merge['col_start']);
+            $endCol = self::stringFromColumnIndex($merge['col_end']);
+            $startRow = $merge['row_start']+2;
+            $endRow = $merge['row_end']+2;
+            // 合并单元格 [A1:B3]
+            $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $merge['col_value'], $format->toResource());
+        }
     }
 
     /**
