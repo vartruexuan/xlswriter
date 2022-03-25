@@ -108,6 +108,7 @@ class XlsWriter extends BaseExcel
                 $dataHeaders[] = [
                     'key' => $head['key'],
                     'type' => $head['type'],
+                    'field'=>$head['field']??$head['key'],
                     'dataFormat' => $head['dataFormat'] ?? null,
                 ];
             }
@@ -192,8 +193,9 @@ class XlsWriter extends BaseExcel
                         'colIndex' => $keysIndex[$head['key']]
                     ]);
                 } else {
-                    $newVal[$colIndex] = $v[$head['key']] ?? '';
+                    $newVal[$colIndex] = $v[$head['field']??$head['key']] ?? '';
                 }
+
                 $dataType=$head['type'];
                 $dataTypeParam=[];
                 if(is_array($dataType)){
@@ -226,8 +228,6 @@ class XlsWriter extends BaseExcel
             $endCol = self::stringFromColumnIndex($merge['col_end']);
             $startRow = $merge['row_start'];
             $endRow = $merge['row_end'];
-
-            //echo "{$startCol}{$startRow}:{$endCol}{$endRow}\n";
             // 合并单元格 [A1:B3]
             $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $merge['col_value'], $format->toResource());
         }
@@ -268,6 +268,7 @@ class XlsWriter extends BaseExcel
                 'dateFormat' => 'yyyy-mm-dd hh:mm:ss',// 时间格式
                 'formatHandle' => null,
             ],
+            // 图片
             'image' => [
                 'widthScale' => 1, // 宽度缩放比例
                 'heightScale' => 1,// 高度缩放比例
