@@ -157,7 +157,7 @@ class XlsWriter extends BaseExcel
             if ($i == 1) {
                 $pageSize = count($data);
             }
-            $startRowIndex = $pageSize * ($i - 1);
+            $startRowIndex = $maxRow + $pageSize * ($i - 1);
             // 格式化数据
             $this->writerData($data, $dataHeaders, $sheetConfig, $startRowIndex);
             $i++;
@@ -179,26 +179,36 @@ class XlsWriter extends BaseExcel
         // 格式化数据
         $newData = [];
         foreach ($data as $k => $v) {
+            $rowIndex = $startRowIndex + $k ;
             // 行处理
-            $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null, $startRowIndex + $k, $keysIndex));
+          //  $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null,$rowIndex+1, $keysIndex));
             foreach ($dataHeaders as $colIndex => $head) {
+
                 // 格式化
                 if (is_callable($head['dataFormat'])) {
                     $newVal[$colIndex] = call_user_func_array($head['dataFormat'], [
                         'row' => $v,
-                        'rowIndex' => $startRowIndex + $k,
+                        'rowIndex' => $rowIndex,
                         'colIndex' => $keysIndex[$head['key']]
                     ]);
                 } else {
                     $newVal[$colIndex] = $v[$head['key']] ?? '';
                 }
+                $dataType=$head['type'];
+                $dataTypeParam=[];
+                if(is_array($dataType)){
+                    $dataType=$head['type'][0];
+                    $dataTypeParam=$head['type'][1]??[];
+                }
+                // 数据类型
+                $this->insertCell($dataType??'text', $rowIndex, $keysIndex[$head['key']], $newVal[$colIndex],$dataTypeParam);
                 // 列样式
             }
             $newData[$k] = array_values($newVal ?? []);
 
         }
         // 写入数据
-        $this->excel->data(array_values($newData));
+        //$this->excel->data(array_values($newData));
         $this->rowFormat($mergeList ?? []);
 
     }
@@ -214,11 +224,66 @@ class XlsWriter extends BaseExcel
             ], $this->excel->getHandle());
             $startCol = self::stringFromColumnIndex($merge['col_start']);
             $endCol = self::stringFromColumnIndex($merge['col_end']);
-            $startRow = $merge['row_start']+2;
-            $endRow = $merge['row_end']+2;
+            $startRow = $merge['row_start'];
+            $endRow = $merge['row_end'];
+
+            //echo "{$startCol}{$startRow}:{$endCol}{$endRow}\n";
             // 合并单元格 [A1:B3]
             $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $merge['col_value'], $format->toResource());
         }
+    }
+
+
+    /**
+     * 插入单元格
+     *
+     * @param $dataType 数据类型
+     * @param $rowIndex 行下标
+     * @param $colIndex 列下标
+     * @param $param    附加参数
+     *
+     * @return void
+     */
+    public function insertCell($dataType, $rowIndex, $colIndex, $value, $param = [])
+    {
+        // 数据类型
+        $dataTypeList = [
+            // 文本
+            'text' => [
+                'format' => null,
+                'formatHandle' => null,
+            ],
+            // 链接
+            'url' => [
+                'text' => null,// 链接文字
+                'tooltip' => null,// 链接提示
+                'formatHandle' => null,
+            ],
+            // 公式
+            'formula' => [
+                'formatHandle' => null,
+            ],
+            // 时间
+            'date' => [
+                'dateFormat' => 'yyyy-mm-dd hh:mm:ss',// 时间格式
+                'formatHandle' => null,
+            ],
+            'image' => [
+                'widthScale' => 1, // 宽度缩放比例
+                'heightScale' => 1,// 高度缩放比例
+            ],
+        ];
+        $dataTypes = array_keys($dataTypeList);
+        $dataType = in_array($dataType, $dataTypes) ? $dataType : $dataTypes[0];
+        // 排除非附加属性字段
+        $param=array_intersect_key($param,$dataTypeList[$dataType]);
+        $param = array_merge([
+            'row' => $rowIndex,
+            'column' => $colIndex,
+            'value' => $value,
+        ], $dataTypeList[$dataType], $param);
+        $dataType = ucfirst($dataType);
+        call_user_func_array([$this->excel, "insert{$dataType}"], $param);
     }
 
     /**
