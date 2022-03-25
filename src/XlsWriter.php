@@ -84,10 +84,17 @@ class XlsWriter extends BaseExcel
         if ($isConstMemory) {
             // $this->excel->header(array_column($sheetConfig['header'],'title'));
         }
-        $this->setHeader($this->calculationColspan($sheetConfig['header']), $maxRow, $dataHeaders, $rowIndex, $endColIndex);
 
-        // 导出数据
-        $this->exportData($dataHeaders, $sheetConfig, $maxRow);
+        if ($sheetConfig['sheetType'] == 'default') {
+            $this->setHeader($this->calculationColspan($sheetConfig['header']), $maxRow, $dataHeaders, $rowIndex, $endColIndex);
+            // 导出数据
+            $this->exportData($dataHeaders, $sheetConfig, $maxRow);
+        } else {
+            // 图表操作
+            $this->exportChart($sheetConfig);
+
+        }
+
     }
 
     protected function setSheet($sheetConfig)
@@ -108,7 +115,7 @@ class XlsWriter extends BaseExcel
                 $dataHeaders[] = [
                     'key' => $head['key'],
                     'type' => $head['type'],
-                    'field'=>$head['field']??$head['key'],
+                    'field' => $head['field'] ?? $head['key'],
                     'dataFormat' => $head['dataFormat'] ?? null,
                 ];
             }
@@ -166,6 +173,52 @@ class XlsWriter extends BaseExcel
 
     }
 
+    protected function exportChart($sheetConfig)
+    {
+
+        $dataHeader = [
+            'Category', 'Values',
+        ];
+
+        $dataRows = [
+            ['测试1', 50],
+            ['测试2', 35],
+            ['测试3', 15],
+        ];
+
+        $chart = new \Vtiful\Kernel\Chart($this->excel->getHandle(), \Vtiful\Kernel\Chart::CHART_DOUGHNUT);
+        $chartResource = $chart
+            // series(string $value [, string $category])
+            ->series("={$sheetConfig['sheetName']}!\$B$2:\$B$4", "={$sheetConfig['sheetName']}!\$A$2:\$A$4")
+            ->seriesName('名字')
+            ->title('测试标题')
+            ->style(10)
+            ->toResource();
+
+        $this->excel
+            ->header($dataHeader)
+            ->data($dataRows)
+            ->insertChart(0, 4, $chartResource);
+
+        //
+        $chart = new \Vtiful\Kernel\Chart($this->excel->getHandle(), \Vtiful\Kernel\Chart::CHART_COLUMN);
+
+        $chartResource2 = $chart->series($sheetConfig['sheetName'].'!$C$21:$C$25')
+            ->series($sheetConfig['sheetName'].'!$D$21:$D$25')
+            ->series($sheetConfig['sheetName'].'!$E$21:$E$25')
+            ->toResource();
+
+         $this->excel->setCurrentLine(20)->data([
+            [1, 2, 3],
+            [2, 4, 6],
+            [3, 6, 9],
+            [4, 8, 12],
+            [5, 10, 15],
+        ])->insertChart(20, 3, $chartResource2);
+
+
+    }
+
     /**
      * 写入数据
      *
@@ -180,9 +233,9 @@ class XlsWriter extends BaseExcel
         // 格式化数据
         $newData = [];
         foreach ($data as $k => $v) {
-            $rowIndex = $startRowIndex + $k ;
+            $rowIndex = $startRowIndex + $k;
             // 行处理
-          //  $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null,$rowIndex+1, $keysIndex));
+            $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null, $rowIndex + 1, $keysIndex));
             foreach ($dataHeaders as $colIndex => $head) {
 
                 // 格式化
@@ -190,20 +243,21 @@ class XlsWriter extends BaseExcel
                     $newVal[$colIndex] = call_user_func_array($head['dataFormat'], [
                         'row' => $v,
                         'rowIndex' => $rowIndex,
-                        'colIndex' => $keysIndex[$head['key']]
+                        'colIndex' => $keysIndex[$head['key']],
+                        "keysIndex" => $keysIndex
                     ]);
                 } else {
-                    $newVal[$colIndex] = $v[$head['field']??$head['key']] ?? '';
+                    $newVal[$colIndex] = $v[$head['field'] ?? $head['key']] ?? '';
                 }
 
-                $dataType=$head['type'];
-                $dataTypeParam=[];
-                if(is_array($dataType)){
-                    $dataType=$head['type'][0];
-                    $dataTypeParam=$head['type'][1]??[];
+                $dataType = $head['type'];
+                $dataTypeParam = [];
+                if (is_array($dataType)) {
+                    $dataType = $head['type'][0];
+                    $dataTypeParam = $head['type'][1] ?? [];
                 }
                 // 数据类型
-                $this->insertCell($dataType??'text', $rowIndex, $keysIndex[$head['key']], $newVal[$colIndex],$dataTypeParam);
+                $this->insertCell($dataType ?? 'text', $rowIndex, $keysIndex[$head['key']], $newVal[$colIndex], $dataTypeParam);
                 // 列样式
             }
             $newData[$k] = array_values($newVal ?? []);
@@ -218,6 +272,7 @@ class XlsWriter extends BaseExcel
     protected function rowFormat($mergeList)
     {
         // 计算最终合并
+
         // 合并行单元格
         foreach ($mergeList as $merge) {
             // 默认样式
@@ -277,7 +332,7 @@ class XlsWriter extends BaseExcel
         $dataTypes = array_keys($dataTypeList);
         $dataType = in_array($dataType, $dataTypes) ? $dataType : $dataTypes[0];
         // 排除非附加属性字段
-        $param=array_intersect_key($param,$dataTypeList[$dataType]);
+        $param = array_intersect_key($param, $dataTypeList[$dataType]);
         $param = array_merge([
             'row' => $rowIndex,
             'column' => $colIndex,
