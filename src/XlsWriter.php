@@ -189,7 +189,7 @@ class XlsWriter extends BaseExcel
      */
     public function writerData($data, $dataHeaders, $sheetConfig, $startRowIndex = 0)
     {
-        // $startRowIndex=$this->excel->getCurrentLine();
+        $startRowIndex=$this->excel->getCurrentLine();
         $keysIndex = array_flip(array_column($dataHeaders, 'key'));
         // 格式化数据
         $newData = [];
@@ -224,6 +224,7 @@ class XlsWriter extends BaseExcel
                 // 列样式
             }
             $newData[$k] = array_values($newVal ?? []);
+            $this->excel->nextRow();
 
         }
         // 写入数据
