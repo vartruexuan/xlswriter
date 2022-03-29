@@ -85,7 +85,8 @@ class XlsWriter extends BaseExcel
             // $this->excel->header(array_column($sheetConfig['header'],'title'));
         }
 
-        if ($sheetConfig['sheetType'] == 'default') {
+        $sheetType = $sheetConfig['sheetType'] ?? 'default';
+        if ($sheetType == 'default') {
             $this->setHeader($this->calculationColspan($sheetConfig['header']), $maxRow, $dataHeaders, $rowIndex, $endColIndex);
             // 导出数据
             $this->exportData($dataHeaders, $sheetConfig, $maxRow);
@@ -160,7 +161,7 @@ class XlsWriter extends BaseExcel
             $data = $sheetConfig['data'];
             $isWhile = false;
             if (is_callable($sheetConfig['data'])) {
-                $data = $sheetConfig['data']($this, $i, $dataHeaders, $isWhile);
+                $data = $sheetConfig['data']($this, $i, $dataHeaders, $isWhile,$maxRow);
             }
             if ($i == 1) {
                 $pageSize = count($data);
@@ -175,48 +176,7 @@ class XlsWriter extends BaseExcel
 
     protected function exportChart($sheetConfig)
     {
-
-        $dataHeader = [
-            'Category', 'Values',
-        ];
-
-        $dataRows = [
-            ['测试1', 50],
-            ['测试2', 35],
-            ['测试3', 15],
-        ];
-
-        $chart = new \Vtiful\Kernel\Chart($this->excel->getHandle(), \Vtiful\Kernel\Chart::CHART_DOUGHNUT);
-        $chartResource = $chart
-            // series(string $value [, string $category])
-            ->series("={$sheetConfig['sheetName']}!\$B$2:\$B$4", "={$sheetConfig['sheetName']}!\$A$2:\$A$4")
-            ->seriesName('名字')
-            ->title('测试标题')
-            ->style(10)
-            ->toResource();
-
-        $this->excel
-            ->header($dataHeader)
-            ->data($dataRows)
-            ->insertChart(0, 4, $chartResource);
-
-        //
-        $chart = new \Vtiful\Kernel\Chart($this->excel->getHandle(), \Vtiful\Kernel\Chart::CHART_COLUMN);
-
-        $chartResource2 = $chart->series($sheetConfig['sheetName'].'!$C$21:$C$25')
-            ->series($sheetConfig['sheetName'].'!$D$21:$D$25')
-            ->series($sheetConfig['sheetName'].'!$E$21:$E$25')
-            ->toResource();
-
-         $this->excel->setCurrentLine(20)->data([
-            [1, 2, 3],
-            [2, 4, 6],
-            [3, 6, 9],
-            [4, 8, 12],
-            [5, 10, 15],
-        ])->insertChart(20, 3, $chartResource2);
-
-
+        return false;
     }
 
     /**
@@ -229,13 +189,16 @@ class XlsWriter extends BaseExcel
      */
     public function writerData($data, $dataHeaders, $sheetConfig, $startRowIndex = 0)
     {
+        // $startRowIndex=$this->excel->getCurrentLine();
         $keysIndex = array_flip(array_column($dataHeaders, 'key'));
         // 格式化数据
         $newData = [];
         foreach ($data as $k => $v) {
             $rowIndex = $startRowIndex + $k;
             // 行处理
-            $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null, $rowIndex + 1, $keysIndex));
+            if(isset($sheetConfig['rowFormat']['merge'])){
+                $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null, $rowIndex + 1, $keysIndex));
+            }
             foreach ($dataHeaders as $colIndex => $head) {
 
                 // 格式化
