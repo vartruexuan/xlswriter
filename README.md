@@ -62,6 +62,26 @@ $excel->export([
                 "title" =>"name", // 展示列名
                 "type" =>"text", // 数据类型: text,url,formula,date,image
                 "key" =>"name",// 数据key值
+                "style"=>[ // 列样式
+                            "italic" =>false,
+                            "align" =>[
+                                1,
+                                2
+                            ],
+                            "strikeout" =>false,
+                            "underline" =>1,
+                            "wrap" =>false,
+                            "fontColor" =>"0xFF69B4",
+                            "fontSize" =>1.2,
+                            "bold" =>false,
+                            "border" =>1,
+                            "background" => [
+                                "color" =>1,
+                                "pattern" =>""
+                            ],
+                            "font" =>"微软雅黑",
+                            "number" =>"'#,##0'"
+                ],
                 "children" =>[],//可设置多级表头
             ],
             [
