@@ -9,7 +9,7 @@
 $ composer require vartruexuan/xlswriter -vvv
 ```
 
-##使用
+## 使用
 ```php
  $excel = new XlsWriter([
     'path'=>'./excel', // 导出文件存放目录
@@ -48,8 +48,8 @@ $excel->export([
     ]  
 ]);
 ```
-##配置
-###导出配置
+## 配置
+### 导出配置
 ```php
 [
     // 页码配置(可多个)
