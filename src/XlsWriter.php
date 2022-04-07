@@ -156,7 +156,7 @@ class XlsWriter extends BaseExcel
     {
         $i = 1;
 
-        $this->excel->setCurrentLine($maxRow);
+        $this->excel->setCurrentLine($maxRow-1);
         do {
             $data = $sheetConfig['data'];
             $isWhile = false;
@@ -194,7 +194,7 @@ class XlsWriter extends BaseExcel
         // 格式化数据
         $newData = [];
         foreach ($data as $k => $v) {
-            $rowIndex = $startRowIndex + $k;
+            $rowIndex = $startRowIndex + $k+1;
             // 行处理
             if(isset($sheetConfig['rowFormat']['merge'])){
                 $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null, $rowIndex + 1, $keysIndex));
@@ -224,7 +224,7 @@ class XlsWriter extends BaseExcel
                 // 列样式
             }
             $newData[$k] = array_values($newVal ?? []);
-            $this->excel->nextRow();
+            //$this->excel->nextRow();
 
         }
         // 写入数据
@@ -270,22 +270,22 @@ class XlsWriter extends BaseExcel
             // 文本
             'text' => [
                 'format' => null,
-                'formatHandle' => null,
+                'formatHandler' => null,
             ],
-            // 链接
+            // 链接 限制 <= 65530
             'url' => [
                 'text' => null,// 链接文字
                 'tooltip' => null,// 链接提示
-                'formatHandle' => null,
+                'formatHandler' => null,
             ],
             // 公式
             'formula' => [
-                'formatHandle' => null,
+                'formatHandler' => null,
             ],
             // 时间
             'date' => [
                 'dateFormat' => 'yyyy-mm-dd hh:mm:ss',// 时间格式
-                'formatHandle' => null,
+                'formatHandler' => null,
             ],
             // 图片
             'image' => [
@@ -295,8 +295,14 @@ class XlsWriter extends BaseExcel
         ];
         $dataTypes = array_keys($dataTypeList);
         $dataType = in_array($dataType, $dataTypes) ? $dataType : $dataTypes[0];
+
         // 排除非附加属性字段
         $param = array_intersect_key($param, $dataTypeList[$dataType]);
+        // 样式格式化
+        if(isset($param['formatHandler'])){
+            $param['formatHandler']=(new StyleFormat($param['formatHandler'],$this->excel->getHandle()))->toResource();
+        }
+
         $param = array_merge([
             'row' => $rowIndex,
             'column' => $colIndex,
