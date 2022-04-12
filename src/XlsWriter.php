@@ -10,6 +10,7 @@
 
 namespace Vartruexuan\Xlswriter;
 
+use Intervention\Image\ImageManagerStatic as Image;
 use \Vtiful\Kernel\Excel;
 use \Vtiful\Kernel\Format;
 
@@ -156,12 +157,12 @@ class XlsWriter extends BaseExcel
     {
         $i = 1;
 
-        $this->excel->setCurrentLine($maxRow-1);
+        $this->excel->setCurrentLine($maxRow - 1);
         do {
             $data = $sheetConfig['data'];
             $isWhile = false;
             if (is_callable($sheetConfig['data'])) {
-                $data = $sheetConfig['data']($this, $i, $dataHeaders, $isWhile,$maxRow);
+                $data = $sheetConfig['data']($this, $i, $dataHeaders, $isWhile, $maxRow);
             }
             if ($i == 1) {
                 $pageSize = count($data);
@@ -189,14 +190,14 @@ class XlsWriter extends BaseExcel
      */
     public function writerData($data, $dataHeaders, $sheetConfig, $startRowIndex = 0)
     {
-        $startRowIndex=$this->excel->getCurrentLine();
+        $startRowIndex = $this->excel->getCurrentLine();
         $keysIndex = array_flip(array_column($dataHeaders, 'key'));
         // 格式化数据
         $newData = [];
         foreach ($data as $k => $v) {
-            $rowIndex = $startRowIndex + $k+1;
+            $rowIndex = $startRowIndex + $k + 1;
             // 行处理
-            if(isset($sheetConfig['rowFormat']['merge'])){
+            if (isset($sheetConfig['rowFormat']['merge'])) {
                 $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null, $rowIndex + 1, $keysIndex));
             }
             foreach ($dataHeaders as $colIndex => $head) {
@@ -295,14 +296,34 @@ class XlsWriter extends BaseExcel
         ];
         $dataTypes = array_keys($dataTypeList);
         $dataType = in_array($dataType, $dataTypes) ? $dataType : $dataTypes[0];
-
+        // 图片特殊处理
+        if ($dataType == 'image') {
+            if (!file_exists($value)) {
+                $dataType = 'text';
+            } else {
+                // 计算高度 | 宽度
+                $image = Image::make($value);
+                $height = $image->height();
+                $width = $image->width();
+                // 设置行高
+                if ($height) {
+                    $height = $height * ($param['heightScale'] ?? 1); // 比例计算
+                    $this->excel->setRow("A:" . ($rowIndex + 1), $height);
+                }
+                // 设置列宽
+                if ($width) {
+                    $width = $width * ($param['widthScale'] ?? 1); // 比例计算
+                    $colIndexStr = self::stringFromColumnIndex($colIndex);
+                    $this->excel->setColumn("{$colIndexStr}:{$colIndexStr}", ceil($width / 8) + 5);
+                }
+            }
+        }
         // 排除非附加属性字段
         $param = array_intersect_key($param, $dataTypeList[$dataType]);
         // 样式格式化
-        if(isset($param['formatHandler'])){
-            $param['formatHandler']=(new StyleFormat($param['formatHandler'],$this->excel->getHandle()))->toResource();
+        if (isset($param['formatHandler'])) {
+            $param['formatHandler'] = (new StyleFormat($param['formatHandler'], $this->excel->getHandle()))->toResource();
         }
-
         $param = array_merge([
             'row' => $rowIndex,
             'column' => $colIndex,
@@ -320,7 +341,8 @@ class XlsWriter extends BaseExcel
      *
      * @return mixed
      */
-    protected function calculationColspan($header, $level = 1)
+    protected
+    function calculationColspan($header, $level = 1)
     {
         // 子集colspan之和
         foreach ($header as &$head) {
@@ -335,7 +357,8 @@ class XlsWriter extends BaseExcel
         return $header;
     }
 
-    protected function initExcel()
+    protected
+    function initExcel()
     {
         if (!$this->excel instanceof \Vtiful\Kernel\Excel) {
             $this->excel = new Excel($this->getConfig());
@@ -343,17 +366,20 @@ class XlsWriter extends BaseExcel
         return $this->excel;
     }
 
-    protected function closeExcel()
+    protected
+    function closeExcel()
     {
         return $this->excel->close();
     }
 
-    public static function stringFromColumnIndex($index)
+    public
+    static function stringFromColumnIndex($index)
     {
         return Excel::stringFromColumnIndex($index);
     }
 
-    public static function columnIndexFromString($index)
+    public
+    static function columnIndexFromString($index)
     {
         return Excel::columnIndexFromString($index);
     }
