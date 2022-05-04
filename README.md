@@ -1,6 +1,8 @@
 
 <h1 align="center"> xlswriter </h1>  
 
+<a href="https://packagist.org/packages/intervention/image" rel="nofollow"><img src="https://badgen.net/github/tag/vartruexuan/xlswriter" alt="Latest Version" data-canonical-src="https://badgen.net/github/tag/vartruexuan/xlswriter" style="max-width: 100%;"></a>
+<a href="https://www.php.net" rel="nofollow"><img src="https://img.shields.io/badge/php-%3E=7.3-brightgreen.svg?maxAge=2592000" alt="Php Version" data-canonical-src="https://img.shields.io/badge/php-%3E=7.3-brightgreen.svg?maxAge=2592000" style="max-width: 100%;"></a>
 [![Tests](https://github.com/vartruexuan/xlswriter/actions/workflows/tests.yml/badge.svg)](https://github.com/vartruexuan/xlswriter/actions/workflows/tests.yml)
 
 # 概述
