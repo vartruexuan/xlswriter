@@ -11,6 +11,9 @@
 namespace Vartruexuan\Xlswriter;
 
 use Intervention\Image\ImageManagerStatic as Image;
+use mysql_xdevapi\Exception;
+use Vartruexuan\Xlswriter\common\exception\XlswriterException;
+use Vartruexuan\Xlswriter\common\utils\Arr;
 use \Vtiful\Kernel\Excel;
 use \Vtiful\Kernel\Format;
 
@@ -58,6 +61,14 @@ class XlsWriter extends BaseExcel
         return $filePath;
     }
 
+    /**
+     * 导入
+     *
+     * @param $config
+     * @param $fileName
+     *
+     * @return array
+     */
     public function import($config, $fileName = 'demo.xlsx')
     {
         $this->excel = $this->excel->openFile($fileName);
@@ -71,6 +82,15 @@ class XlsWriter extends BaseExcel
         return $list;
     }
 
+    /**
+     * 导出sheet
+     *
+     * @param $sheetConfig
+     * @param $isAdd
+     * @param $isConstMemory
+     *
+     * @return void
+     */
     protected function exportSheet($sheetConfig, $isAdd = false, $isConstMemory = false)
     {
         if ($isAdd) {
@@ -85,20 +105,22 @@ class XlsWriter extends BaseExcel
         if ($isConstMemory) {
             // $this->excel->header(array_column($sheetConfig['header'],'title'));
         }
-
         $sheetType = $sheetConfig['sheetType'] ?? 'default';
         if ($sheetType == 'default') {
             $this->setHeader($this->calculationColspan($sheetConfig['header']), $maxRow, $dataHeaders, $rowIndex, $endColIndex);
             // 导出数据
             $this->exportData($dataHeaders, $sheetConfig, $maxRow);
-        } else {
-            // 图表操作
-            $this->exportChart($sheetConfig);
-
         }
 
     }
 
+    /**
+     * 设置sheet
+     *
+     * @param $sheetConfig
+     *
+     * @return void
+     */
     protected function setSheet($sheetConfig)
     {
         $sheet = new Sheet($sheetConfig, $this->excel);
@@ -109,15 +131,26 @@ class XlsWriter extends BaseExcel
         }
     }
 
+    /**
+     * 设置头信息
+     *
+     * @param array $headers
+     * @param       $maxRow
+     * @param       $dataHeaders
+     * @param       $rowIndex
+     * @param       $endColIndex
+     *
+     * @return bool
+     */
     protected function setHeader(array $headers, &$maxRow = 1, &$dataHeaders = [], $rowIndex = 1, &$endColIndex = -1)
     {
         foreach ($headers as $head) {
             $head = DefaultConfig::getHeaderConfig($head);
-            if ($head['key']) {
+            if ($head['field']) {
                 $dataHeaders[] = [
-                    'key' => $head['key'],
+                    'key' => $head['key'] ?? $head['field'],
                     'type' => $head['type'],
-                    'field' => $head['field'] ?? $head['key'],
+                    'field' => $head['field'],
                     'dataFormat' => $head['dataFormat'] ?? null,
                 ];
             }
@@ -137,13 +170,12 @@ class XlsWriter extends BaseExcel
             }
 
             // 默认样式
-            $format = new StyleFormat([
+            $format = $this->getStyleFormat([
                 "align" => [Format::FORMAT_ALIGN_CENTER, Format::FORMAT_ALIGN_VERTICAL_CENTER],
                 "bold" => true,
-            ], $this->excel->getHandle());
-
+            ]);
             // 合并单元格 [A1:B3]
-            $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $head['title'], $format->toResource());
+            $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $head['title'], $format);
             // 子集操作
             if (isset($head['children']) && $head['children']) {
                 $endColIndex = $startColIndex - 1;
@@ -153,10 +185,18 @@ class XlsWriter extends BaseExcel
         return true;
     }
 
+    /**
+     * 导出数据
+     *
+     * @param $dataHeaders
+     * @param $sheetConfig
+     * @param $maxRow
+     *
+     * @return void
+     */
     protected function exportData($dataHeaders, $sheetConfig, $maxRow)
     {
         $i = 1;
-
         $this->excel->setCurrentLine($maxRow - 1);
         do {
             $data = $sheetConfig['data'];
@@ -175,11 +215,6 @@ class XlsWriter extends BaseExcel
 
     }
 
-    protected function exportChart($sheetConfig)
-    {
-        return false;
-    }
-
     /**
      * 写入数据
      *
@@ -193,7 +228,6 @@ class XlsWriter extends BaseExcel
         $startRowIndex = $this->excel->getCurrentLine();
         $keysIndex = array_flip(array_column($dataHeaders, 'key'));
         // 格式化数据
-        $newData = [];
         foreach ($data as $k => $v) {
             $rowIndex = $startRowIndex + $k + 1;
             // 行处理
@@ -201,7 +235,6 @@ class XlsWriter extends BaseExcel
                 $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null, $rowIndex + 1, $keysIndex));
             }
             foreach ($dataHeaders as $colIndex => $head) {
-
                 // 格式化
                 if (is_callable($head['dataFormat'])) {
                     $newVal[$colIndex] = call_user_func_array($head['dataFormat'], [
@@ -211,7 +244,7 @@ class XlsWriter extends BaseExcel
                         "keysIndex" => $keysIndex
                     ]);
                 } else {
-                    $newVal[$colIndex] = $v[$head['field'] ?? $head['key']] ?? '';
+                    $newVal[$colIndex] = Arr::get($v, $head['field'], '');
                 }
 
                 $dataType = $head['type'];
@@ -220,13 +253,9 @@ class XlsWriter extends BaseExcel
                     $dataType = $head['type'][0];
                     $dataTypeParam = $head['type'][1] ?? [];
                 }
-                // 数据类型
                 $this->insertCell($dataType ?? 'text', $rowIndex, $keysIndex[$head['key']], $newVal[$colIndex], $dataTypeParam);
-                // 列样式
             }
-            $newData[$k] = array_values($newVal ?? []);
-            //$this->excel->nextRow();
-
+            // $newData[$k] = array_values($newVal ?? []);
         }
         // 写入数据
         //$this->excel->data(array_values($newData));
@@ -234,6 +263,13 @@ class XlsWriter extends BaseExcel
 
     }
 
+    /**
+     * 行格式化
+     *
+     * @param $mergeList
+     *
+     * @return void
+     */
     protected function rowFormat($mergeList)
     {
         // 计算最终合并
@@ -260,78 +296,156 @@ class XlsWriter extends BaseExcel
      * @param $dataType 数据类型
      * @param $rowIndex 行下标
      * @param $colIndex 列下标
-     * @param $param    附加参数
+     * @param $option    附加参数
      *
      * @return void
      */
-    public function insertCell($dataType, $rowIndex, $colIndex, $value, $param = [])
+    public function insertCell($dataType, $rowIndex, $colIndex, $value, $option = [])
     {
-        // 数据类型
-        $dataTypeList = [
-            // 文本
-            'text' => [
-                'format' => null,
-                'formatHandler' => null,
-            ],
-            // 链接 限制 <= 65530
-            'url' => [
-                'text' => null,// 链接文字
-                'tooltip' => null,// 链接提示
-                'formatHandler' => null,
-            ],
-            // 公式
-            'formula' => [
-                'formatHandler' => null,
-            ],
-            // 时间
-            'date' => [
-                'dateFormat' => 'yyyy-mm-dd hh:mm:ss',// 时间格式
-                'formatHandler' => null,
-            ],
-            // 图片
-            'image' => [
-                'widthScale' => 1, // 宽度缩放比例
-                'heightScale' => 1,// 高度缩放比例
-            ],
-        ];
-        $dataTypes = array_keys($dataTypeList);
-        $dataType = in_array($dataType, $dataTypes) ? $dataType : $dataTypes[0];
-        // 图片特殊处理
-        if ($dataType == 'image') {
-            if (!file_exists($value)) {
-                $dataType = 'text';
-            } else {
-                // 计算高度 | 宽度
-                $image = Image::make($value);
-                $height = $image->height();
-                $width = $image->width();
-                // 设置行高
-                if ($height) {
-                    $height = $height * ($param['heightScale'] ?? 1); // 比例计算
-                    $this->excel->setRow("A:" . ($rowIndex + 1), $height);
-                }
-                // 设置列宽
-                if ($width) {
-                    $width = $width * ($param['widthScale'] ?? 1); // 比例计算
-                    $colIndexStr = self::stringFromColumnIndex($colIndex);
-                    $this->excel->setColumn("{$colIndexStr}:{$colIndexStr}", ceil($width / 8) + 5);
-                }
-            }
+        $callFunName = "insert{$dataType}";
+        if (!method_exists($this, $callFunName)) {
+            throw  new XlswriterException("{$dataType} type not exists");
         }
-        // 排除非附加属性字段
-        $param = array_intersect_key($param, $dataTypeList[$dataType]);
-        // 样式格式化
-        if (isset($param['formatHandler'])) {
-            $param['formatHandler'] = (new StyleFormat($param['formatHandler'], $this->excel->getHandle()))->toResource();
-        }
-        $param = array_merge([
-            'row' => $rowIndex,
-            'column' => $colIndex,
+        call_user_func_array([$this, $callFunName], [
+            'rowIndex' => $rowIndex,
+            'colIndex' => $colIndex,
             'value' => $value,
-        ], $dataTypeList[$dataType], $param);
-        $dataType = ucfirst($dataType);
-        call_user_func_array([$this->excel, "insert{$dataType}"], $param);
+            'option' => $option,
+        ]);
+        return $this;
     }
+
+    /**
+     * 插入文本
+     *
+     * @param $rowIndex
+     * @param $colIndex
+     * @param $value
+     * @param $option
+     *
+     * @return Excel
+     */
+    public function insertText($rowIndex, $colIndex, $value, $option = [])
+    {
+        $option = array_merge([
+            'format' => null,
+            'formatHandler' => null,
+        ], $option);
+        $option['formatHandler'] = $this->getStyleFormat($option['formatHandler']);
+        $this->excel->insertText($rowIndex, $colIndex, $value, $option['format'], $option['formatHandler']);
+        return $this;
+    }
+
+    /**
+     * 插入图片
+     *
+     * @param $rowIndex
+     * @param $colIndex
+     * @param $value
+     * @param $param
+     *
+     * @return Excel
+     */
+    public function insertImage($rowIndex, $colIndex, $value, $option = [])
+    {
+        $option = array_merge([
+            'widthScale' => 1, // 宽度缩放比例
+            'heightScale' => 1,// 高度缩放比例
+        ], $option);
+        // 图片特殊处理
+        if (!file_exists($value)) {
+            // 下载图片
+            return $this->insertText($rowIndex, $colIndex, $value, $option);
+        }
+        $image = Image::make($value);
+        $height = $image->height();
+        $width = $image->width();
+        // 设置行高
+        if ($height) {
+            $height = $height * ($option['heightScale'] ?? 1); // 比例计算
+            $this->excel->setRow("A:" . ($rowIndex + 1), $height);
+        }
+        // 设置列宽
+        if ($width) {
+            $width = $width * ($option['widthScale'] ?? 1); // 比例计算
+            $colIndexStr = self::stringFromColumnIndex($colIndex);
+            $this->excel->setColumn("{$colIndexStr}:{$colIndexStr}", ceil($width / 8) + 5);
+        }
+        return $this->excel->insertImage($rowIndex, $colIndex, $value, $option['widthScale'], $option['heightScale']);
+    }
+
+    /**
+     * 插入链接
+     *
+     * @param $rowIndex
+     * @param $colIndex
+     * @param $value
+     * @param $option
+     *
+     * @return $this
+     */
+    public function insertUrl($rowIndex, $colIndex, $value, $option = [])
+    {
+        $option = array_merge([
+            'text' => null,// 链接文字
+            'tooltip' => null,// 链接提示
+            'formatHandler' => null,
+        ], $option);
+        $this->excel->insertUrl($rowIndex, $colIndex, $value, $option['text'], $option['tooltip'], $this->getStyleFormat($option['formatHandler']));
+        return $this;
+    }
+
+    /**
+     * 插入公式
+     *
+     * @param $rowIndex
+     * @param $colIndex
+     * @param $value
+     * @param $param
+     *
+     * @return $this
+     */
+    public function insertFormula($rowIndex, $colIndex, $value, $param = [])
+    {
+        $option = array_merge([
+            'formatHandler' => null,
+        ], $param);
+        $this->excel->insertFormula($rowIndex, $colIndex, $value, $this->getStyleFormat($option['formatHandler']));
+        return $this;
+    }
+
+    /**
+     * 插入时间
+     *
+     * @param $rowIndex
+     * @param $colIndex
+     * @param $value
+     * @param $param
+     *
+     * @return $this
+     */
+    public function insertDate($rowIndex, $colIndex, $value, $param = [])
+    {
+        $option = array_merge([
+            'dateFormat' => null,
+            'formatHandler' => null,
+        ], $param);
+        $this->excel->insertDate($rowIndex, $colIndex, $value, $option['dateFormat'], $this->getStyleFormat($option['formatHandler']));
+        return $this;
+    }
+
+    /**
+     * 获取样式资源
+     *
+     * @param $style
+     *
+     * @return resource
+     */
+    public function getStyleFormat($style)
+    {
+        return $style ? (new StyleFormat($style, $this->excel->getHandle()))->toResource() : null;
+    }
+
 
     /**
      * 计算colspan(多级)
@@ -341,24 +455,36 @@ class XlsWriter extends BaseExcel
      *
      * @return mixed
      */
-    protected
-    function calculationColspan($header, $level = 1)
+    protected function calculationColspan($header, $level = 1)
     {
+        static $fields = [];
         // 子集colspan之和
         foreach ($header as &$head) {
-            $children = $head['children'] ?? [];
-            if ($children) {
-                $head['children'] = $this->calculationColspan($children, $level + 1);
+            $head = array_merge($head, [
+                'children' => $head['children'] ?? [],
+                'colspan' => 1,
+            ]);
+            $field = Arr::get($head, 'field');
+            if ($field) {
+                // 生成key 标识
+                $fields[$field] = ($fields[$field] ?? 0) + 1;
+                $head['key'] = $fields[$field] > 0 ? ($field . '-' . $fields[$field]) : $field;
+            }
+            if ($head['children']) {
+                $head['children'] = $this->calculationColspan($head['children'], $level + 1);
                 $head['colspan'] = array_sum(array_column($head['children'], 'colspan'));
-            } else {
-                $head['colspan'] = 1;
             }
         }
         return $header;
     }
 
-    protected
-    function initExcel()
+    /**
+     * 初始化excel
+     *
+     * @return Excel
+     * @throws \Exception
+     */
+    protected function initExcel()
     {
         if (!$this->excel instanceof \Vtiful\Kernel\Excel) {
             $this->excel = new Excel($this->getConfig());
@@ -366,20 +492,22 @@ class XlsWriter extends BaseExcel
         return $this->excel;
     }
 
-    protected
-    function closeExcel()
+    /**
+     * 关闭excel
+     *
+     * @return mixed
+     */
+    protected function closeExcel()
     {
         return $this->excel->close();
     }
 
-    public
-    static function stringFromColumnIndex($index)
+    public static function stringFromColumnIndex($index)
     {
         return Excel::stringFromColumnIndex($index);
     }
 
-    public
-    static function columnIndexFromString($index)
+    public static function columnIndexFromString($index)
     {
         return Excel::columnIndexFromString($index);
     }

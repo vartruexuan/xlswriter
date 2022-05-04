@@ -33,11 +33,19 @@ class DefaultConfig
 
         ],$config);
     }
+
+    /**
+     * 默认配置(header)
+     *
+     * @param $config
+     *
+     * @return array|int[]|string[]
+     */
     public static function getHeaderConfig($config=[])
     {
         return array_merge([
             "title" => "",
-            "type" => "string",
+            "type" => "text",
             "key" => "",
             "style" => "",
             "dataFormat" =>null,
