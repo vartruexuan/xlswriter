@@ -21,7 +21,10 @@ jobs:
               with:
                   php-version: ${{ matrix.php_version }}
                   coverage: xdebug
-            # 安装 composer 依赖
+            # 安装拓展
+            - name: Install ext-xlswriter
+              run: pecl install xlswriter
+              # 安装 composer 依赖
             - name: Install dependencies
               run: composer install
             # 执行 PHPUnit 测试

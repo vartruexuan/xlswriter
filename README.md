@@ -1,7 +1,7 @@
 
 <h1 align="center"> xlswriter </h1>  
 
-[![Tests](https://github.com/vartruexuan/xlswriter/actions/workflows/tests.yml/badge.svg)](https://github.com/vartruexuan/easy-outapi/actions/workflows/tests.yml)
+[![Tests](https://github.com/vartruexuan/xlswriter/actions/workflows/tests.yml/badge.svg)](https://github.com/vartruexuan/xlswriter/actions/workflows/tests.yml)
 
 # 概述
 
