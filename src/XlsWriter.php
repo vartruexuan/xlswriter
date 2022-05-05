@@ -37,6 +37,8 @@ class XlsWriter extends BaseExcel
     }
 
     /**
+     * export
+     *
      * @param array  $sheetsConfig
      * @param string $fileName
      * @param bool   $isConstMemory
@@ -45,11 +47,11 @@ class XlsWriter extends BaseExcel
      */
     public function export($sheetsConfig, $fileName = 'demo.xlsx', $isConstMemory = false)
     {
-        $excelId = Str::random(16);
+        $excelId = $this->getExportId();
+        $temDir = $this->getTmpDir($excelId);
         foreach ($sheetsConfig as $k => $sheetConfig) {
             $sheetConfig['excelId'] = $excelId;
             if (!$k) {
-                // 固定内存模式
                 if ($isConstMemory) {
                     $this->excel = $this->excel->constMemory($fileName, $sheetConfig['sheetName'], false); // wps
                 } else {
@@ -59,9 +61,8 @@ class XlsWriter extends BaseExcel
             $this->exportSheet($sheetConfig, $k, $isConstMemory);
         }
         $filePath = $this->excel->output();
-        // 删除临时文件
-        File::deleteDirectory($this->getTmpDir($excelId));
         $this->closeExcel();
+        $this->cleanExport($temDir);
         return $filePath;
     }
 
@@ -505,6 +506,7 @@ class XlsWriter extends BaseExcel
         return $this->excel->close();
     }
 
+
     /**
      * 下载图片
      *
@@ -515,8 +517,8 @@ class XlsWriter extends BaseExcel
     protected function downImage($url, $dir)
     {
         $filePath = $dir . '/' . md5($url);
-        if(file_exists($filePath)){
-            return  $filePath;
+        if (file_exists($filePath)) {
+            return $filePath;
         }
         $responses = HttpClient::getInstance()->multiRequest([[
             'url' => $url,
@@ -544,15 +546,23 @@ class XlsWriter extends BaseExcel
      */
     protected function getTmpDir($dirName)
     {
-        $tmpDir = sys_get_temp_dir() . "/xlswriter_img/{$dirName}";
+        $tmpDir = sys_get_temp_dir() . "/xlswriter/{$dirName}";
         if (!file_exists($tmpDir)) {
             if (!File::createDirectory($tmpDir, 0777, true)) {
-                throw new XlswriterException('mkdir fail');
+                throw new XlswriterException('Create temp dir fail');
             }
         }
         return $tmpDir;
     }
+    protected function getExportId()
+    {
+        return Str::random();
+    }
 
+    protected function cleanExport($tmpDir)
+    {
+        File::deleteDirectory($tmpDir);
+    }
     public static function stringFromColumnIndex($index)
     {
         return Excel::stringFromColumnIndex($index);
