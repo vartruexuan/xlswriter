@@ -12,6 +12,7 @@
 - 支持无限极表头
 - 多页码配置
 - 多数据类型配置
+- 支持远程图片
   
 # 安装
 ```shell
@@ -32,13 +33,17 @@ $excel->export([
             [
                 "title" => "name", // 列展示标题
                 "type" => "text",  // 数据类型: text,url,formula,date,image
-                "key" => "name",   // 列标识(必须唯一)
                 "field"=>"name",   // 数据字段
             ],
             [
                 "title" => "年龄",
                 "type" => "text",
-                "key" => "age", 
+                "field" => "age", 
+            ],
+            [
+                "title" => "图片",
+                "type" => "image",
+                "field" => "image", 
             ]
         ],
         "data" => [
@@ -46,10 +51,12 @@ $excel->export([
             [
                 "name" => "小黄",
                 "age" => 11,
+                "image" => './image/1.jpg',
             ],
             [
                 "name" => "小红",
                 "age" => 11,
+                "image" => 'https://xxx.com/image/2.jpg',
             ],
 
         ],

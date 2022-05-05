@@ -1,6 +1,6 @@
 <?php
 
-namespace Vartruexuan\Xlswriter\common\utils;
+namespace Vartruexuan\Xlswriter\Common\Utils;
 
 /**
  * Array helper from Illuminate\Support\Arr.

@@ -13,7 +13,7 @@ class ExcelTest extends \PHPUnit\Framework\TestCase
             [
                 'name' => '测试1',
                 'url' => 'https://baidu.com',
-                'image' => __DIR__ . '/image/1.jpeg',
+                'image' => 'http://www.ykzx.cn/file/upload/1_181030100319_1.jpg',
                 'date' => time(),
                 'arr'=>[
                     'arr1'=>'测试下'
@@ -22,7 +22,7 @@ class ExcelTest extends \PHPUnit\Framework\TestCase
             [
                 'name' => '测试2',
                 'url' => 'https://baidu.com',
-                'image' => __DIR__ . '/image/2.jpeg',
+                'image' => 'http://www.ykzx.cn/file/upload/1-1305131621534Z.jpg',
                 'date' => time(),
             ],
             [
