@@ -291,14 +291,17 @@ class XlsWriter extends BaseExcel
     /**
      * 插入单元格
      *
-     * @param $dataType 数据类型
-     * @param $rowIndex 行下标
-     * @param $colIndex 列下标
-     * @param $option    附加参数
+     * @param $dataType
+     * @param $rowIndex
+     * @param $colIndex
+     * @param $value
+     * @param array $option
+     * @param $sheetConfig
      *
-     * @return void
+     * @return $this
+     * @throws XlswriterException
      */
-    public function insertCell($dataType, $rowIndex, $colIndex, $value, $option = [], $sheetConfig)
+    public function insertCell($dataType, $rowIndex, $colIndex, $value,  $option = [], $sheetConfig)
     {
         $callFunName = "insert{$dataType}";
         if (!method_exists($this, $callFunName)) {
@@ -321,8 +324,9 @@ class XlsWriter extends BaseExcel
      * @param $colIndex
      * @param $value
      * @param $option
+     * @param $sheetConfig
      *
-     * @return Excel
+     * @return $this
      */
     public function insertText($rowIndex, $colIndex, $value, $option = [], $sheetConfig)
     {
@@ -341,9 +345,11 @@ class XlsWriter extends BaseExcel
      * @param $rowIndex
      * @param $colIndex
      * @param $value
-     * @param $param
+     * @param $option
+     * @param $sheetConfig
      *
-     * @return Excel
+     * @return $this
+     * @throws XlswriterException
      */
     public function insertImage($rowIndex, $colIndex, $value, $option = [], $sheetConfig)
     {
