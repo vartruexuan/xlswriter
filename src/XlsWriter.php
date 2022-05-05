@@ -11,7 +11,6 @@
 namespace Vartruexuan\Xlswriter;
 
 use Intervention\Image\ImageManagerStatic as Image;
-use mysql_xdevapi\Exception;
 use Vartruexuan\Xlswriter\common\Exceptions\XlswriterException;
 use Vartruexuan\Xlswriter\common\Utils\Arr;
 use Vartruexuan\Xlswriter\Common\Utils\File;

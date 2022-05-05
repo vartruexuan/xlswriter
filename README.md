@@ -8,7 +8,7 @@
 
 # 概述
 
-- 基于组件 [viest/php-ext-xlswriter](https://github.com/viest/php-ext-xlswriter) 封装
+- 基于组件 [viest/php-ext-xlswriter](https://github.com/viest/php-ext-xlswriter)
 - 支持无限极表头
 - 多页码配置
 - 多数据类型配置
