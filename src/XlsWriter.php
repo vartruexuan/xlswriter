@@ -147,9 +147,9 @@ class XlsWriter extends BaseExcel
     {
         foreach ($headers as $head) {
             $head = DefaultConfig::getHeaderConfig($head);
-            if ($head['field']) {
+            if (isset($head['field'])) {
                 $dataHeaders[] = [
-                    'key' => $head['key'] ?? $head['field'],
+                    'key' => $head['key'],
                     'type' => $head['type'],
                     'field' => $head['field'],
                     'dataFormat' => $head['dataFormat'] ?? null,
