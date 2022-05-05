@@ -11,8 +11,8 @@
 namespace Vartruexuan\Xlswriter;
 
 use Intervention\Image\ImageManagerStatic as Image;
-use Vartruexuan\Xlswriter\common\Exceptions\XlswriterException;
-use Vartruexuan\Xlswriter\common\Utils\Arr;
+use Vartruexuan\Xlswriter\Common\Exceptions\XlswriterException;
+use Vartruexuan\Xlswriter\Common\Utils\Arr;
 use Vartruexuan\Xlswriter\Common\Utils\File;
 use Vartruexuan\Xlswriter\Common\Utils\HttpClient;
 use Vartruexuan\Xlswriter\Common\Utils\Str;
