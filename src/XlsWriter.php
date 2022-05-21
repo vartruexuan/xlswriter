@@ -63,6 +63,7 @@ class XlsWriter extends BaseExcel
         $filePath = $this->excel->output();
         $this->closeExcel();
         $this->cleanExport($temDir);
+
         return $filePath;
     }
 
@@ -82,8 +83,9 @@ class XlsWriter extends BaseExcel
         $list = [];
         foreach ($sheetList as $sheet) {
             $data = $this->excel->openSheet($sheet)->getSheetData();
-            $list[$sheet] = $data;
+            $list[ $sheet ] = $data;
         }
+
         return $list;
     }
 
@@ -147,11 +149,11 @@ class XlsWriter extends BaseExcel
     {
         foreach ($headers as $head) {
             $head = DefaultConfig::getHeaderConfig($head);
-            if ($head['field']) {
+            if (isset($head['field'])) {
                 $dataHeaders[] = [
-                    'key' => $head['key'] ?? $head['field'],
-                    'type' => $head['type'],
-                    'field' => $head['field'],
+                    'key'        => $head['key'],
+                    'type'       => $head['type'],
+                    'field'      => $head['field'],
                     'dataFormat' => $head['dataFormat'] ?? null,
                 ];
             }
@@ -171,7 +173,7 @@ class XlsWriter extends BaseExcel
             }
             $format = $this->getStyleFormat([
                 "align" => [Format::FORMAT_ALIGN_CENTER, Format::FORMAT_ALIGN_VERTICAL_CENTER],
-                "bold" => true,
+                "bold"  => true,
             ]);
             // 合并单元格 [A1:B3]
             $this->excel->mergeCells("{$startCol}{$startRow}:{$endCol}{$endRow}", $head['title'], $format);
@@ -180,6 +182,7 @@ class XlsWriter extends BaseExcel
                 $this->setHeader($head['children'], $maxRow, $dataHeaders, $rowIndex + $head['rowspan'], $endColIndex);
             }
         }
+
         return true;
     }
 
@@ -230,19 +233,19 @@ class XlsWriter extends BaseExcel
             $rowIndex = $startRowIndex + $k + 1;
             // 行处理
             if (isset($sheetConfig['rowFormat']['merge'])) {
-                $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[$k - 1] ?? null, $v, $data[$k + 1] ?? null, $rowIndex + 1, $keysIndex));
+                $mergeList = array_merge($mergeList ?? [], $sheetConfig['rowFormat']['merge']($data[ $k - 1 ] ?? null, $v, $data[ $k + 1 ] ?? null, $rowIndex + 1, $keysIndex));
             }
             foreach ($dataHeaders as $colIndex => $head) {
                 // 格式化
                 if (is_callable($head['dataFormat'])) {
-                    $newVal[$colIndex] = call_user_func_array($head['dataFormat'], [
-                        'row' => $v,
-                        'rowIndex' => $rowIndex,
-                        'colIndex' => $keysIndex[$head['key']],
-                        "keysIndex" => $keysIndex
+                    $newVal[ $colIndex ] = call_user_func_array($head['dataFormat'], [
+                        'row'       => $v,
+                        'rowIndex'  => $rowIndex,
+                        'colIndex'  => $keysIndex[ $head['key'] ],
+                        "keysIndex" => $keysIndex,
                     ]);
                 } else {
-                    $newVal[$colIndex] = Arr::get($v, $head['field'], '');
+                    $newVal[ $colIndex ] = Arr::get($v, $head['field'], '');
                 }
 
                 $dataType = $head['type'];
@@ -251,7 +254,7 @@ class XlsWriter extends BaseExcel
                     $dataType = $head['type'][0];
                     $dataTypeParam = $head['type'][1] ?? [];
                 }
-                $this->insertCell($dataType ?? 'text', $rowIndex, $keysIndex[$head['key']], $newVal[$colIndex], $dataTypeParam, $sheetConfig);
+                $this->insertCell($dataType ?? 'text', $rowIndex, $keysIndex[ $head['key'] ], $newVal[ $colIndex ], $dataTypeParam, $sheetConfig);
             }
             // $newData[$k] = array_values($newVal ?? []);
         }
@@ -291,29 +294,31 @@ class XlsWriter extends BaseExcel
     /**
      * 插入单元格
      *
-     * @param $dataType
-     * @param $rowIndex
-     * @param $colIndex
-     * @param $value
+     * @param       $dataType
+     * @param       $rowIndex
+     * @param       $colIndex
+     * @param       $value
      * @param array $option
-     * @param $sheetConfig
+     * @param       $sheetConfig
      *
      * @return $this
      * @throws XlswriterException
      */
-    public function insertCell($dataType, $rowIndex, $colIndex, $value,  $option = [], $sheetConfig)
+    public function insertCell($dataType, $rowIndex, $colIndex, $value, $option = [], $sheetConfig)
     {
-        $callFunName = "insert{$dataType}";
+        $morePre = is_array($value) ? 'More' : '';
+        $callFunName = "insert{$morePre}{$dataType}";
         if (!method_exists($this, $callFunName)) {
             throw  new XlswriterException("{$dataType} type not exists");
         }
         call_user_func_array([$this, $callFunName], [
-            'rowIndex' => $rowIndex,
-            'colIndex' => $colIndex,
-            'value' => $value,
-            'option' => $option,
+            'rowIndex'    => $rowIndex,
+            'colIndex'    => $colIndex,
+            'value'       => $value,
+            'option'      => $option,
             'sheetConfig' => $sheetConfig,
         ]);
+
         return $this;
     }
 
@@ -331,11 +336,12 @@ class XlsWriter extends BaseExcel
     public function insertText($rowIndex, $colIndex, $value, $option = [], $sheetConfig)
     {
         $option = array_merge([
-            'format' => null,
+            'format'        => null,
             'formatHandler' => null,
         ], $option);
         $option['formatHandler'] = $this->getStyleFormat($option['formatHandler']);
         $this->excel->insertText($rowIndex, $colIndex, $value, $option['format'], $option['formatHandler']);
+
         return $this;
     }
 
@@ -351,10 +357,10 @@ class XlsWriter extends BaseExcel
      * @return $this
      * @throws XlswriterException
      */
-    public function insertImage($rowIndex, $colIndex, $value, $option = [], $sheetConfig)
+    public function insertImage($rowIndex, $colIndex, $value, $option = [], $sheetConfig, &$return = null)
     {
         $option = array_merge([
-            'widthScale' => 1, // 宽度缩放比例
+            'widthScale'  => 1, // 宽度缩放比例
             'heightScale' => 1,// 高度缩放比例
         ], $option);
 
@@ -382,8 +388,37 @@ class XlsWriter extends BaseExcel
             $this->excel->setColumn("{$colIndexStr}:{$colIndexStr}", ceil($width / 8) + 5);
         }
         $this->excel->insertImage($rowIndex, $colIndex, $value, $option['widthScale'], $option['heightScale']);
+        $return = [
+            'width'  => $width,
+            'height' => $height,
+        ];
+
         return $this;
 
+    }
+
+    /**
+     * 多图片插入
+     *
+     * @param $rowIndex
+     * @param $colIndex
+     * @param $valueArr
+     * @param $option
+     * @param $sheetConfig
+     *
+     * @throws \Vartruexuan\Xlswriter\Common\Exceptions\XlswriterException
+     */
+    public function insertMoreImage($rowIndex, $colIndex, $valueArr, $option, $sheetConfig)
+    {
+        $width = 0;
+        foreach ($valueArr as $value) {
+            $this->insertImage($rowIndex, $colIndex, $value, $option, $sheetConfig, $return);
+            $width += $return['width'];
+        }
+        if ($width) {
+            $colIndexStr = self::stringFromColumnIndex($colIndex);
+            $this->excel->setColumn("{$colIndexStr}:{$colIndexStr}", ceil($width / 8) + 5);
+        }
     }
 
     /**
@@ -399,11 +434,12 @@ class XlsWriter extends BaseExcel
     public function insertUrl($rowIndex, $colIndex, $value, $option = [], $sheetConfig)
     {
         $option = array_merge([
-            'text' => null,// 链接文字
-            'tooltip' => null,// 链接提示
+            'text'          => null,// 链接文字
+            'tooltip'       => null,// 链接提示
             'formatHandler' => null,
         ], $option);
         $this->excel->insertUrl($rowIndex, $colIndex, $value, $option['text'], $option['tooltip'], $this->getStyleFormat($option['formatHandler']));
+
         return $this;
     }
 
@@ -423,6 +459,7 @@ class XlsWriter extends BaseExcel
             'formatHandler' => null,
         ], $option);
         $this->excel->insertFormula($rowIndex, $colIndex, $value, $this->getStyleFormat($option['formatHandler']));
+
         return $this;
     }
 
@@ -439,10 +476,11 @@ class XlsWriter extends BaseExcel
     public function insertDate($rowIndex, $colIndex, $value, $option = [], $sheetConfig)
     {
         $option = array_merge([
-            'dateFormat' => null,
+            'dateFormat'    => null,
             'formatHandler' => null,
         ], $option);
         $this->excel->insertDate($rowIndex, $colIndex, $value, $option['dateFormat'], $this->getStyleFormat($option['formatHandler']));
+
         return $this;
     }
 
@@ -473,18 +511,19 @@ class XlsWriter extends BaseExcel
         foreach ($header as &$head) {
             $head = array_merge($head, [
                 'children' => $head['children'] ?? [],
-                'colspan' => 1,
+                'colspan'  => 1,
             ]);
             $field = Arr::get($head, 'field');
             if ($field) {
-                $fields[$field] = ($fields[$field] ?? 0) + 1;
-                $head['key'] = $fields[$field] > 0 ? ($field . '-' . $fields[$field]) : $field;
+                $fields[ $field ] = ($fields[ $field ] ?? 0) + 1;
+                $head['key'] = $fields[ $field ] > 0 ? ($field . '-' . $fields[ $field ]) : $field;
             }
             if ($head['children']) {
                 $head['children'] = $this->calculationColspan($head['children'], $level + 1);
                 $head['colspan'] = array_sum(array_column($head['children'], 'colspan'));
             }
         }
+
         return $header;
     }
 
@@ -499,6 +538,7 @@ class XlsWriter extends BaseExcel
         if (!$this->excel instanceof \Vtiful\Kernel\Excel) {
             $this->excel = new Excel($this->getConfig());
         }
+
         return $this->excel;
     }
 
@@ -526,14 +566,16 @@ class XlsWriter extends BaseExcel
         if (file_exists($filePath)) {
             return $filePath;
         }
-        $responses = HttpClient::getInstance()->multiRequest([[
-            'url' => $url,
-            'method' => 'GET',
-            'option' => [
-                'verify' => false,
-                'http_errors' => false,
+        $responses = HttpClient::getInstance()->multiRequest([
+            [
+                'url'    => $url,
+                'method' => 'GET',
+                'option' => [
+                    'verify'      => false,
+                    'http_errors' => false,
+                ],
             ],
-        ]]);
+        ]);
         foreach ($responses as $key => $response) {
             if ($response && $response->getStatusCode() == 200) {
                 if (@file_put_contents($filePath, $response->getBody()->getContents())) {
@@ -541,6 +583,7 @@ class XlsWriter extends BaseExcel
                 }
             }
         }
+
         return false;
     }
 
@@ -558,8 +601,10 @@ class XlsWriter extends BaseExcel
                 throw new XlswriterException('Create temp dir fail');
             }
         }
+
         return $tmpDir;
     }
+
     protected function getExportId()
     {
         return Str::random();
@@ -569,6 +614,7 @@ class XlsWriter extends BaseExcel
     {
         File::deleteDirectory($tmpDir);
     }
+
     public static function stringFromColumnIndex($index)
     {
         return Excel::stringFromColumnIndex($index);
