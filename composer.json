@@ -10,7 +10,7 @@
     ],
     "require": {
         "intervention/image": "^2.7",
-        "guzzlehttp/guzzle": "^7.4"
+        "guzzlehttp/guzzle": "~6.0 || ^7.0"
     },
     "require-dev": {
         "viest/php-ext-xlswriter-ide-helper": "^v1.3.6",
