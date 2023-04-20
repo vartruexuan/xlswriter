@@ -9,10 +9,12 @@
         }
     ],
     "require": {
-        "viest/php-ext-xlswriter-ide-helper": "dev-master",
         "intervention/image": "^2.7",
         "phpunit/phpunit": "^9.5",
         "guzzlehttp/guzzle": "^7.4"
+    },
+    "require-dev": {
+        "viest/php-ext-xlswriter-ide-helper": "^v1.3.6"
     },
     "autoload": {
         "psr-4": {
